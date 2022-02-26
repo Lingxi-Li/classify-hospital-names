@@ -29,11 +29,11 @@ namespace Label
                     anno = anno.Replace(subEndTag, $"{Delimiter}");
                 }
                 if (!anno.Contains(Delimiter)) continue;
-                subnames.AddRange(anno.Split(new[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries));
+                subnames.AddRange(Split(anno));
             }
             for (var i = 0; i < names.Length; ++i)
             {
-                var idx = names[i].IndexOf("医院");
+                var idx = names[i].LastIndexOf("医院");
                 if (0 <= idx && idx < names[i].Length - 2)
                 {
                     var subname = names[i].Substring(idx + 2, names[i].Length - idx - 2);
@@ -137,7 +137,7 @@ namespace Label
                                         {
                                             var k = i + 1;
                                             while (++i < builder.Length && builder[i] != ')') ;
-                                            annotations.Add(builder.ToString(k, i - k));
+                                            annotations.AddRange(Split(builder.ToString(k, i - k)));
                                             break;
                                         }
                                     default:
@@ -147,7 +147,7 @@ namespace Label
                                         }
                                 }
                             }
-                            annotations.Add(builder2.ToString());
+                            annotations.AddRange(Split(builder2.ToString()));
                             break;
                         }
                     case AliasTagChr: // alias
@@ -162,7 +162,7 @@ namespace Label
                                         {
                                             var k = i + 1;
                                             while (++i < builder.Length && builder[i] != ')') ;
-                                            annotations.Add(builder.ToString(k, i - k));
+                                            annotations.AddRange(Split(builder.ToString(k, i - k)));
                                             break;
                                         }
                                     default:
@@ -189,39 +189,9 @@ namespace Label
             return builder.ToString();
         }
 
-        private static string[] SplitNames(string str)
+        private static string[] Split(string str)
         {
-            // required to be two-char string
-            var endTags = new[] { "医院" }.Concat(SubEndTags).ToArray();
-            var names = new List<string>();
-            foreach (var block in str.Split(new[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var i = block.Length - 1;
-                while (i >= 0)
-                {
-                    var idx1 = block.LastIndexOf("医院", i, i + 1);
-                    if (idx1 == -1)
-                    {
-                        names.Add(block.Substring(0, i + 1));
-                        i = -1;
-                    }
-                    else
-                    {
-                        var idx2 = idx1 - 1;
-                        if (idx2 >= 0)
-                        {
-                            idx2 = endTags
-                                .Select(tag => block.LastIndexOf(tag, idx2, idx2 + 1))
-                                .Max();
-                        }
-                        idx2 = idx2 == -1 ? 0 : (idx2 + 2);
-                        names.Add(block.Substring(idx2, i + 1 - idx2));
-                        i = idx2 - 1;
-                    }
-                }
-                Trace.Assert(i == -1);
-            }
-            return names.Distinct().ToArray();
+            return str.Split(new[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries);
         }
 
         private static string RemoveNoises(string str)
@@ -249,7 +219,7 @@ namespace Label
 
         public static string[] Reconcile(string str, List<string> annotations)
         {
-            var names = new List<string>(SplitNames(str));
+            var names = new List<string>(Split(str));
             var end = 0;
             for (var i = 0; i < annotations.Count; ++i)
             {
@@ -262,7 +232,7 @@ namespace Label
             }
             for (var i = end; i < annotations.Count; ++i)
             {
-                names.AddRange(SplitNames(annotations[i]));
+                names.Add(annotations[i]);
             }
             annotations.RemoveRange(end, annotations.Count - end);
             for (var i = 0; i < annotations.Count; ++i)
