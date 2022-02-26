@@ -11,6 +11,7 @@ namespace Label
     class Hospital
     {
         public string OriginalEntry { get; private set; }
+        public string NormalizedEntry { get; private set; }
         public List<string> Names { get; private set; }
         public string[] Subnames { get; private set; }
         public string[] Annotations { get; private set; }
@@ -18,7 +19,8 @@ namespace Label
         public static Hospital Parse(string entry)
         {
             List<string> annotations;
-            var cleanedup = CleanUp(entry, out annotations);
+            string normalizedEntry;
+            var cleanedup = CleanUp(entry, out annotations, out normalizedEntry);
             var names = Reconcile(cleanedup, annotations).Select(n => n.Replace("附属", null)).ToArray();
             var subnames = new List<string>(annotations.Count);
             var annos = new List<string>(annotations.Count);
@@ -52,6 +54,7 @@ namespace Label
             return new Hospital
             {
                 OriginalEntry = entry,
+                NormalizedEntry = normalizedEntry,
                 Names = names.NonEmptyDistinct().ToList(),
                 Subnames = subnames.NonEmptyDistinct().ToArray(),
                 Annotations = annos.NonEmptyDistinct().ToArray()
@@ -71,7 +74,7 @@ namespace Label
             "院区"
         };
 
-        public static string CleanUp(string entry, out List<string> annotations)
+        public static string CleanUp(string entry, out List<string> annotations, out string normalizedEntry)
         {
             // char by char processing
             var remove = new HashSet<char>
@@ -113,6 +116,7 @@ namespace Label
                 if (remove.Contains(c)) continue;
                 builder.Append(map.TryGetValue(c, out char mapped) ? mapped : c);
             }
+            normalizedEntry = builder.ToString();
 
             // process annotations
             var AliasTagStrs = new[]
