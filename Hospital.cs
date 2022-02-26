@@ -13,6 +13,7 @@ namespace Label
         public string OriginalEntry { get; private set; }
         public List<string> Names { get; private set; }
         public string[] Subnames { get; private set; }
+        public string[] Annotations { get; private set; }
 
         public static Hospital Parse(string entry)
         {
@@ -20,16 +21,19 @@ namespace Label
             var cleanedup = CleanUp(entry, out annotations);
             var names = Reconcile(cleanedup, annotations).Select(n => n.Replace("附属", null)).ToArray();
             var subnames = new List<string>(annotations.Count);
+            var annos = new List<string>(annotations.Count);
             foreach (var annotation in annotations)
             {
-                Trace.Assert(!annotation.Contains(Delimiter));
                 var anno = annotation;
                 foreach (var subEndTag in SubEndTags)
                 {
-                    anno = anno.Replace(subEndTag, $"{Delimiter}");
+                    if (anno.EndsWith(subEndTag))
+                    {
+                        anno = anno.Substring(0, anno.Length - subEndTag.Length);
+                        break;
+                    }
                 }
-                if (!anno.Contains(Delimiter)) continue;
-                subnames.AddRange(Split(anno));
+                (anno.Length < annotation.Length ? subnames : annos).Add(anno);
             }
             for (var i = 0; i < names.Length; ++i)
             {
@@ -48,8 +52,9 @@ namespace Label
             return new Hospital
             {
                 OriginalEntry = entry,
-                Names = names.Where(n => n.Length > 0).Distinct().ToList(),
-                Subnames = subnames.Where(n => n.Length > 0).Distinct().ToArray()
+                Names = names.NonEmptyDistinct().ToList(),
+                Subnames = subnames.NonEmptyDistinct().ToArray(),
+                Annotations = annos.NonEmptyDistinct().ToArray()
             };
         }
 

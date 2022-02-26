@@ -32,5 +32,10 @@ namespace Label
         {
             return ((double)a / b).ToPercentStr();
         }
+
+        public static IEnumerable<string> NonEmptyDistinct(this IEnumerable<string> strs)
+        {
+            return strs.Where(s => s.Length > 0).Distinct();
+        }
     }
 }

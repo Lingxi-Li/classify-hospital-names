@@ -55,6 +55,7 @@ namespace Label
         {
             Hospital match = null;
             diff = int.MaxValue;
+            var annoMatchCnt = 0;
             foreach (var nameRef in Names)
             {
                 int d;
@@ -62,10 +63,20 @@ namespace Label
                 if (!SubnamesMatch(h, nameRef.Hospital)) continue;
                 if (!NameMatch(name, nameRef.Name)) continue;
                 // matched
-                diff = d;
-                match = nameRef.Hospital;
+                var newAnnoMatchCnt = AnnotationMatchCount(h, nameRef.Hospital);
+                if (d < diff || newAnnoMatchCnt > annoMatchCnt)
+                {
+                    diff = d;
+                    annoMatchCnt = newAnnoMatchCnt;
+                    match = nameRef.Hospital;
+                }
             }
             return match;
+        }
+
+        private static int AnnotationMatchCount(Hospital a, Hospital b)
+        {
+            return a.Annotations.Intersect(b.Annotations).Count();
         }
 
         private static bool NameMatch(string a, string b)
