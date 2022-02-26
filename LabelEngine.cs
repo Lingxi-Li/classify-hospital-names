@@ -81,7 +81,9 @@ namespace Label
                 sub = b;
                 main = a;
             }
-            return main.EndsWith(sub);
+            return
+                main.EndsWith(sub)
+                && (main.Length - sub.Length != 1); // e.g., 沙县中医院 and 金沙县中医院
         }
 
         private static bool AllNamesMatch(List<string> namesA , List<string> namesB)
