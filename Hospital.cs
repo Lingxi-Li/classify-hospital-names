@@ -48,8 +48,8 @@ namespace Label
             return new Hospital
             {
                 OriginalEntry = entry,
-                Names = names.Distinct().ToList(),
-                Subnames = subnames.Distinct().ToArray()
+                Names = names.Where(n => n.Length > 0).Distinct().ToList(),
+                Subnames = subnames.Where(n => n.Length > 0).Distinct().ToArray()
             };
         }
 
