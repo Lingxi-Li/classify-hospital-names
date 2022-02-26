@@ -22,7 +22,7 @@ namespace Label
                 foreach (var entry in Util.EnumerateAllLines(args[0]))
                 {
                     Console.WriteLine($"{(++cnt).ToStr()}: {entry}");
-                    var h = labelEngine.TryLabel(entry);
+                    var h = labelEngine.TryLabelV2(entry);
                     if (h != null) ++labeled;
                     file.WriteLine($"{entry}\t{h?.OriginalEntry}");
                 }

@@ -24,6 +24,21 @@ namespace Label
             Names.Sort((n0, n1) => n0.Name.Length - n1.Name.Length);
         }
 
+        // requires bi-directional all names match
+        public Hospital TryLabelV2(string entry)
+        {
+            var h = Hospital.Parse(entry);
+            foreach (var candi in Labels)
+            {
+                if (AllNamesMatch(h.Names, candi.Names)
+                    && SubnamesMatch(h.Subnames, candi.Subnames))
+                {
+                    return candi;
+                }
+            }
+            return null;
+        }
+
         public Hospital TryLabel(string entry)
         {
             var h = Hospital.Parse(entry);
@@ -45,23 +60,41 @@ namespace Label
                 int d;
                 if ((d = Math.Abs(name.Length - nameRef.Name.Length)) > diff) break;
                 if (!SubnamesMatch(h.Subnames, nameRef.Hospital.Subnames)) continue;
-                string sub, main;
-                if (name.Length <= nameRef.Name.Length)
-                {
-                    sub = name;
-                    main = nameRef.Name;
-                }
-                else
-                {
-                    sub = nameRef.Name;
-                    main = name;
-                }
-                if (!main.EndsWith(sub)) continue;
+                if (!NameMatch(name, nameRef.Name)) continue;
                 // matched
                 diff = d;
                 match = nameRef.Hospital;
             }
             return match;
+        }
+
+        private static bool NameMatch(string a, string b)
+        {
+            string sub, main;
+            if (a.Length <= b.Length)
+            {
+                sub = a;
+                main = b;
+            }
+            else
+            {
+                sub = b;
+                main = a;
+            }
+            return main.EndsWith(sub);
+        }
+
+        private static bool AllNamesMatch(List<string> namesA , List<string> namesB)
+        {
+            foreach (var name in namesA)
+            {
+                if (!namesB.Any(n => NameMatch(n, name))) return false;
+            }
+            foreach (var name in namesB)
+            {
+                if (!namesA.Any(n => NameMatch(n, name))) return false;
+            }
+            return true;
         }
 
         private static bool SubnamesMatch(string[] subnamesA, string[] subnamesB)
