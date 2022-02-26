@@ -24,7 +24,7 @@ namespace Label
             Names.Sort((n0, n1) => n0.Name.Length - n1.Name.Length);
         }
 
-        // requires bi-directional all names match
+        // requires bi-directional all-name match
         public Hospital TryLabelV2(string entry)
         {
             var h = Hospital.Parse(entry);
@@ -86,6 +86,7 @@ namespace Label
                 && (main.Length - sub.Length != 1); // e.g., 沙县中医院 and 金沙县中医院
         }
 
+        // bi-directional all-name match
         private static bool AllNamesMatch(List<string> namesA , List<string> namesB)
         {
             foreach (var name in namesA)
