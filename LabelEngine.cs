@@ -31,7 +31,7 @@ namespace Label
             foreach (var candi in Labels)
             {
                 if (AllNamesMatch(h.Names, candi.Names)
-                    && SubnamesMatch(h.Subnames, candi.Subnames))
+                    && SubnamesMatch(h, candi))
                 {
                     return candi;
                 }
@@ -59,7 +59,7 @@ namespace Label
             {
                 int d;
                 if ((d = Math.Abs(name.Length - nameRef.Name.Length)) > diff) break;
-                if (!SubnamesMatch(h.Subnames, nameRef.Hospital.Subnames)) continue;
+                if (!SubnamesMatch(h, nameRef.Hospital)) continue;
                 if (!NameMatch(name, nameRef.Name)) continue;
                 // matched
                 diff = d;
@@ -100,14 +100,19 @@ namespace Label
             return true;
         }
 
-        private static bool SubnamesMatch(string[] subnamesA, string[] subnamesB)
+        // bi-directional
+        private static bool SubnamesMatch(Hospital a, Hospital b)
         {
+            string[] subnamesA = a.Subnames, subnamesB = b.Subnames;
             if (subnamesA.Length == 0 && subnamesB.Length == 0) return true;
-            if (subnamesA.Length == 0 || subnamesB.Length == 0) return false;
-            Trace.Assert(subnamesA.Length > 0 && subnamesB.Length > 0);
             foreach (var subname in subnamesA)
             {
                 if (subnamesB.Any(s => s == subname)) return true;
+                if (b.Names.Any(n => n.Contains(subname))) return true;
+            }
+            foreach (var subname in subnamesB)
+            {
+                if (a.Names.Any(n => n.Contains(subname))) return true;
             }
             return false;
         }
