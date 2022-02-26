@@ -42,10 +42,13 @@ namespace Label
         public Hospital TryLabel(string entry)
         {
             var h = Hospital.Parse(entry);
+            var bestMatch = Labels.FirstOrDefault(c => c.NormalizedEntry == h.NormalizedEntry);
+            if (bestMatch != null) return bestMatch;
+
             h.Names.Sort((n0, n1) => n1.Length - n0.Length);
             foreach (var name in h.Names)
             {
-                var bestMatch = FindBestMatch(name, h, out int diff);
+                bestMatch = FindBestMatch(name, h, out int diff);
                 if (bestMatch != null) return bestMatch;
             }
             return null;
