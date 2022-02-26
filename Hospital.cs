@@ -121,7 +121,7 @@ namespace Label
             {
                 builder.Replace(tag, $"{AliasTagChr}");
             }
-            var j = 0;
+            var resBuilder = new StringBuilder(builder.Length);
             for (int i = 0; i < builder.Length; ++i)
             {
                 switch (builder[i])
@@ -152,7 +152,8 @@ namespace Label
                         }
                     case AliasTagChr: // alias
                         {
-                            builder[j++] = Delimiter;
+                            int oldi = i, oldlen = resBuilder.Length;
+                            resBuilder.Append(Delimiter);
                             while (++i < builder.Length && builder[i] != ')')
                             {
                                 switch (builder[i])
@@ -167,26 +168,34 @@ namespace Label
                                         }
                                     default:
                                         {
-                                            builder[j++] = builder[i];
+                                            resBuilder.Append(builder[i]);
                                             break;
                                         }
                                 }
                             }
-                            if (j < builder.Length) builder[j++] = Delimiter;
+                            if (i < builder.Length - 1)
+                            {
+                                annotations.AddRange(Split(builder.ToString(oldi + 1, i - oldi - 1)));
+                                resBuilder.Length = oldlen; // rewind
+                            }
+                            else
+                            {
+                                resBuilder.Append(Delimiter);
+                            }
                             break;
                         }
+                    case ']':
                     case ')': break;
                     default:
                         {
-                            builder[j++] = builder[i];
+                            resBuilder.Append(builder[i]);
                             break;
                         }
                 }
             }
-            builder.Length = j;
             annotations = annotations.Distinct().ToList();
 
-            return builder.ToString();
+            return resBuilder.ToString();
         }
 
         private static string[] Split(string str)
