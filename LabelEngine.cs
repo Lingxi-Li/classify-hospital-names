@@ -18,6 +18,7 @@ namespace Label
         public LabelEngine(string labelsFilePath)
         {
             Labels = Util.EnumerateAllLines(labelsFilePath).Select(entry => Hospital.Parse(entry)).ToList();
+            Labels.Sort((a, b) => string.CompareOrdinal(a.NormalizedEntry, b.NormalizedEntry));
             Names = Labels
                 .SelectMany(h => h.Names.Select(n => new NameRef { Name = n, Hospital = h }))
                 .ToList();
@@ -42,7 +43,7 @@ namespace Label
         public Hospital TryLabel(string entry)
         {
             var h = Hospital.Parse(entry);
-            var bestMatch = Labels.FirstOrDefault(c => c.NormalizedEntry == h.NormalizedEntry);
+            var bestMatch = TryFindMatchByNormalizedEntry(h.NormalizedEntry);
             if (bestMatch != null) return bestMatch;
 
             h.Names.Sort((n0, n1) => n1.Length - n0.Length);
@@ -50,6 +51,20 @@ namespace Label
             {
                 bestMatch = FindBestMatch(name, h, out int diff);
                 if (bestMatch != null) return bestMatch;
+            }
+            return null;
+        }
+
+        private Hospital TryFindMatchByNormalizedEntry(string entry)
+        {
+            int left = 0, right = Labels.Count - 1;
+            while (left <= right)
+            {
+                var mid = left + (right - left + 1) / 2;
+                var res = string.CompareOrdinal(entry, Labels[mid].NormalizedEntry);
+                if (res < 0) { right = mid - 1; continue; }
+                if (res > 0) { left = mid + 1; continue; }
+                return Labels[mid];
             }
             return null;
         }
