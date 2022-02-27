@@ -18,6 +18,8 @@ namespace Label
 
         public static Hospital Parse(string entry)
         {
+            var moreSubEndTags = SubEndTags.Concat(new[] { "医院", "院", "部", "区" }).ToArray();
+
             List<string> annotations;
             string normalizedEntry;
             var cleanedup = CleanUp(entry, out annotations, out normalizedEntry);
@@ -26,28 +28,51 @@ namespace Label
             var annos = new List<string>(annotations.Count);
             foreach (var annotation in annotations)
             {
-                var anno = annotation;
-                foreach (var subEndTag in SubEndTags)
+                var subEndTag = SubEndTags.FirstOrDefault(tag => annotation.EndsWith(tag));
+                if (subEndTag != null)
                 {
-                    if (anno.EndsWith(subEndTag))
+                    var subname = annotation.Substring(0, annotation.Length - subEndTag.Length);
+                    if (subname.Length == 0)
                     {
-                        anno = anno.Substring(0, anno.Length - subEndTag.Length);
-                        break;
+                        subnames.AddRange(SubEndTags);
+                        continue;
                     }
+                    subnames.AddRange(moreSubEndTags.Select(tag => $"{subname}{tag}"));
+                    if (subname.Length >= 2) subnames.Add(subname);
                 }
-                (anno.Length < annotation.Length ? subnames : annos).Add(anno);
+                else
+                {
+                    annos.Add(annotation);
+                }
             }
             for (var i = 0; i < names.Length; ++i)
             {
                 var idx = names[i].LastIndexOf("医院");
                 if (0 <= idx && idx < names[i].Length - 2)
                 {
+                    var endTag = SubEndTags.FirstOrDefault(tag => names[i].EndsWith(tag));
                     var subname = names[i].Substring(idx + 2, names[i].Length - idx - 2);
-                    foreach (var subEndTag in SubEndTags)
+                    if (endTag != null)
                     {
-                        subname = subname.Replace(subEndTag, null);
+                        subname = subname.Substring(0, subname.Length - endTag.Length);
+                        if (subname.Length == 0)
+                        {
+                            var idx2 = idx == 0 ? -1 : names[i].LastIndexOf("医院", idx - 1, idx);
+                            if (idx2 != -1)
+                            {
+                                subname = names[i].Substring(idx2 + 2, idx - idx2 - "医院".Length);
+                                idx = idx2;
+                            }
+                        }
+                        subnames.AddRange(subname.Length == 0 ? SubEndTags : (moreSubEndTags.Select(tag => $"{subname}{tag}")));
+                        if (subname.Length >= 2) subnames.Add(subname);
                     }
-                    subnames.Add(subname);
+                    else
+                    {
+                        Trace.Assert(subname.Length > 0);
+                        subnames.AddRange(moreSubEndTags.Select(tag => $"{subname}{tag}"));
+                        subnames.Add(subname);
+                    }
                     names[i] = names[i].Substring(0, idx + 2);
                 }
             }
