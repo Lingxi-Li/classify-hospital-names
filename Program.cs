@@ -14,6 +14,7 @@ namespace Label
         {
             if (!Valid(args)) return;
 
+            var startTime = DateTime.Now;
             Console.OutputEncoding = Encoding.UTF8;
             using (var file = File.CreateText(args[2]))
             {
@@ -29,6 +30,9 @@ namespace Label
                 Console.WriteLine();
                 Console.Write($"Labeled {labeled.ToStr()} / {cnt.ToStr()}");
                 Console.WriteLine(cnt > 0 ? $" ({Util.ToPercentStr(labeled, cnt)})" : null);
+                Console.WriteLine();
+                var duration = (DateTime.Now - startTime).ToString("c").Split('.')[0];
+                Console.WriteLine($"Time elapsed: {duration}");
                 Console.WriteLine();
                 PrintAbout();
             }
