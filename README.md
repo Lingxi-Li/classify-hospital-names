@@ -25,6 +25,8 @@ Label.exe <names> <labels> <output>
 |`labels`|Path to the file containing the label strings, each in a separate line.|
 |`output`|Path to the file to write result to. The output is a two-column table with each row in a separate line and each column being tab separated. First column exactly matches `names` in order. Second column contains corresponding label from `labels` or an empty string if no match is found.|
 
-All three files are UTF-8 encoded.
+Output file would be UTF-8 encoded.
 
 The tool processes strings in `names` in order and logs to console the current string being processed. **For correct display of string contents, use a console font that supports Chinese characters.** In the end, the tool logs a summary to console.
+
+If the tool is incorrectly invoked, a GUI dialog will show up to help collect input.
