@@ -40,7 +40,7 @@ namespace Label
                 labelsPath = args[1];
                 outputPath = args[2];
             }
-            Run(namesPath, labelsPath, outputPath, GUI.Properties.ThreadCnt);
+            Run(namesPath, labelsPath, outputPath, GUI.Properties.DefaultThreadCount);
             if (useGui)
             {
                 Console.Write("Press <Enter> to quit.");
@@ -48,29 +48,59 @@ namespace Label
             }
         }
 
+        static int Label(string[] names, LabelEngine labelEngine, int startIndex, int step, Hospital[] labels, bool logProgress)
+        {
+            var progress = 0;
+            var matchCnt = 0;
+            for (var i = startIndex; i < names.Length; i += step)
+            {
+                labels[i] = labelEngine.TryLabel(names[i]);
+                if (labels[i] != null) ++matchCnt;
+                if (logProgress)
+                {
+                    var currentProgress = (i * 100) / names.Length;
+                    if (currentProgress >= progress + 10)
+                    {
+                        progress = currentProgress;
+                        Console.WriteLine($"{progress}% processed");
+                    }
+                }
+            }
+            if (logProgress) Console.WriteLine("100% processed");
+            return matchCnt;
+        }
+
         static void Run(string namesPath, string labelsPath, string outputPath, int threadCnt)
         {
             var startTime = DateTime.Now;
+            var names = File.ReadAllLines(namesPath);
+            var labelEngine = new LabelEngine(labelsPath);
+            var labels = new Hospital[names.Length];
+            var tasks = new List<Task<int>>();
+            for (var i = 0; i < threadCnt - 1; ++i)
+            {
+                var startIndex = i;
+                tasks.Add(Task.Run(() => Label(names, labelEngine, startIndex, threadCnt, labels, false)));
+            }
+            var matchCnt = Label(names, labelEngine, threadCnt - 1, threadCnt, labels, true);
+            matchCnt += tasks.Select(t => t.Result).Sum();
+            Console.WriteLine();
+            Console.Write($"Labeled {matchCnt.ToStr()} / {names.Length.ToStr()}");
+            Console.WriteLine(names.Length > 0 ? $" ({Util.ToPercentStr(matchCnt, names.Length)})" : null);
+            Console.WriteLine();
+            Console.WriteLine("Writing result to output file...");
             using (var file = File.CreateText(outputPath))
             {
-                var labelEngine = new LabelEngine(labelsPath);
-                int cnt = 0, labeled = 0;
-                foreach (var entry in Util.EnumerateAllLines(namesPath))
+                for (var i = 0; i < names.Length; ++i)
                 {
-                    Console.WriteLine($"{(++cnt).ToStr()}: {entry}");
-                    var h = labelEngine.TryLabel(entry);
-                    if (h != null) ++labeled;
-                    file.WriteLine($"{entry}\t{h?.OriginalEntry}");
+                    file.WriteLine($"{names[i]}\t{labels[i]?.OriginalEntry}");
                 }
-                Console.WriteLine();
-                Console.Write($"Labeled {labeled.ToStr()} / {cnt.ToStr()}");
-                Console.WriteLine(cnt > 0 ? $" ({Util.ToPercentStr(labeled, cnt)})" : null);
-                Console.WriteLine();
-                var duration = (DateTime.Now - startTime).ToString("c").Split('.')[0];
-                Console.WriteLine($"Time elapsed: {duration}");
-                Console.WriteLine();
-                PrintAbout();
             }
+            Console.WriteLine("All done.");
+            Console.WriteLine();
+            var duration = (DateTime.Now - startTime).ToString("c").Split('.')[0];
+            Console.WriteLine($"Time elapsed: {duration}");
+            Console.WriteLine();
         }
 
         static bool Valid(string[] args)
@@ -103,9 +133,8 @@ namespace Label
             Console.WriteLine("<labels>: File path to internal names");
             Console.WriteLine("<output>: File path to output to");
             Console.WriteLine();
-            Console.WriteLine("For correct display, use a Command Prompt font that supports Chinese characters.");
-            Console.WriteLine();
             PrintAbout();
+            Console.WriteLine();
         }
     }
 }

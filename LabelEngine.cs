@@ -25,6 +25,7 @@ namespace Label
             Names.Sort((n0, n1) => n0.Name.Length - n1.Name.Length);
         }
 
+        // DEPRECATED
         // requires bi-directional all-name match
         public Hospital TryLabelV2(string entry)
         {

@@ -27,6 +27,4 @@ Label.exe <names> <labels> <output>
 
 Output file would be UTF-8 encoded.
 
-The tool processes strings in `names` in order and logs to console the current string being processed. **For correct display of string contents, use a console font that supports Chinese characters.** In the end, the tool logs a summary to console.
-
-If the tool is incorrectly invoked, a GUI dialog will show up to help collect input.
+If the tool is invoked with incorrect input, a GUI dialog will show up to help collect input. By default, the tool runs with `max(logical processor count - 1, 1)` thread(s). Concurrency can only be tuned with GUI.

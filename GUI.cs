@@ -15,7 +15,7 @@ namespace Label
     {
         public class Properties
         {
-            public static int ThreadCnt = Math.Max(Environment.ProcessorCount - 1, 1);
+            public static int DefaultThreadCount = Math.Max(Environment.ProcessorCount - 1, 1);
 
             [Description("指定外部名字列表文件"),
              Editor(typeof(FileNameEditor), typeof(UITypeEditor))]
@@ -29,10 +29,8 @@ namespace Label
              Editor(typeof(FileNameEditor), typeof(UITypeEditor))]
             public string OutputFilePath { get; set; }
 
-            [Description("Number of threads to use. Auto-deduced as the max of\r\n(# of logical processors - 1) and 1"),
-             Editor(typeof(FileNameEditor), typeof(UITypeEditor)),
-             ReadOnly(true)]
-            public int ThreadCount { get; private set; } = ThreadCnt;
+            [Description("Number of threads to use. Default is max(logical processor count - 1, 1)")]
+            public int Concurrency { get; set; } = DefaultThreadCount;
         }
 
         public Properties Inputs
@@ -89,7 +87,7 @@ namespace Label
             Text = "Label";
             Width = 400;
             Height = 225;
-            MinimumSize = new System.Drawing.Size(400, 225);
+            MinimumSize = new System.Drawing.Size(Width, Height);
             AcceptButton = OkButton;
             CancelButton = CancelBtn;
             OkButton.Click += OnOk;
@@ -121,6 +119,7 @@ namespace Label
                 string.IsNullOrWhiteSpace(Inputs.OutputFilePath) ? "'OutputFilePath' 未指定" :
                 !File.Exists(Inputs.NamesFilePath) ? $"指定文件 '{Inputs.NamesFilePath}' 不存在" :
                 !File.Exists(Inputs.LabelsFilePath) ? $"指定文件 '{Inputs.LabelsFilePath}' 不存在" :
+                (Inputs.Concurrency < 1 || Inputs.Concurrency > Environment.ProcessorCount) ? $"'Concurrency' should be within [1, {Environment.ProcessorCount}]" :
                 null;
         }
     }
