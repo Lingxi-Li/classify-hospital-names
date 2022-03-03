@@ -18,8 +18,6 @@ namespace Label
 
         public static Hospital Parse(string entry)
         {
-            var moreSubEndTags = SubEndTags.Concat(new[] { "医院", "院", "部", "区" }).ToArray();
-
             List<string> annotations;
             string normalizedEntry;
             var cleanedup = CleanUp(entry, out annotations, out normalizedEntry);
@@ -31,14 +29,7 @@ namespace Label
                 var subEndTag = SubEndTags.FirstOrDefault(tag => annotation.EndsWith(tag));
                 if (subEndTag != null)
                 {
-                    var subname = annotation.Substring(0, annotation.Length - subEndTag.Length);
-                    if (subname.Length == 0)
-                    {
-                        subnames.AddRange(SubEndTags);
-                        continue;
-                    }
-                    subnames.AddRange(moreSubEndTags.Select(tag => $"{subname}{tag}"));
-                    if (subname.Length >= 2) subnames.Add(subname);
+                    subnames.AddRange(GetSubnameAliases(annotation, subEndTag));
                 }
                 else
                 {
@@ -47,33 +38,20 @@ namespace Label
             }
             for (var i = 0; i < names.Length; ++i)
             {
-                var idx = names[i].LastIndexOf("医院");
-                if (0 <= idx && idx < names[i].Length - 2)
+                var parts = names[i].Split(new[] { SubnameDelimiter }, StringSplitOptions.RemoveEmptyEntries);
+                names[i] = parts[0];
+                if (parts.Length == 2)
                 {
-                    var endTag = SubEndTags.FirstOrDefault(tag => names[i].EndsWith(tag));
-                    var subname = names[i].Substring(idx + 2, names[i].Length - idx - 2);
-                    if (endTag != null)
+                    var subEndTag = SubEndTags.FirstOrDefault(tag => parts[1].EndsWith(tag));
+                    if (subEndTag != null)
                     {
-                        subname = subname.Substring(0, subname.Length - endTag.Length);
-                        if (subname.Length == 0)
-                        {
-                            var idx2 = idx == 0 ? -1 : names[i].LastIndexOf("医院", idx - 1, idx);
-                            if (idx2 != -1)
-                            {
-                                subname = names[i].Substring(idx2 + 2, idx - idx2 - "医院".Length);
-                                idx = idx2;
-                            }
-                        }
-                        subnames.AddRange(subname.Length == 0 ? SubEndTags : (moreSubEndTags.Select(tag => $"{subname}{tag}")));
-                        if (subname.Length >= 2) subnames.Add(subname);
+                        subnames.AddRange(GetSubnameAliases(parts[1], subEndTag));
                     }
                     else
                     {
-                        Trace.Assert(subname.Length > 0);
-                        subnames.AddRange(moreSubEndTags.Select(tag => $"{subname}{tag}"));
-                        subnames.Add(subname);
+                        subnames.Add(parts[1]);
+                        subnames.AddRange(MoreSubEndTags.Select(tag => $"{parts[1]}{tag}"));
                     }
-                    names[i] = names[i].Substring(0, idx + 2);
                 }
             }
             return new Hospital
@@ -86,10 +64,26 @@ namespace Label
             };
         }
 
+        private static string[] GetSubnameAliases(string subname, string endTag)
+        {
+            Trace.Assert(endTag != null);
+            var payload = subname.Substring(0, subname.Length - endTag.Length);
+            if (payload.Length == 0)
+            {
+                return SubEndTags;
+            }
+            else
+            {
+                var std = MoreSubEndTags.Select(tag => $"{payload}{tag}");
+                return (payload.Length >= 2 ? std.Concat(new[] { payload }) : std).ToArray();
+            }
+        }
+
         ////////////////////
 
-        private const char Delimiter = '〓';
-        private const char AliasTagChr = '{';
+        private const char SubnameDelimiter = '\t';
+        private const char Delimiter = '\n';
+        private const char AliasTagChr = '\0';
 
         // required to be two-char string
         private static string[] SubEndTags = new[]
@@ -98,6 +92,7 @@ namespace Label
             "分部",
             "院区"
         };
+        private static string[] MoreSubEndTags = SubEndTags.Concat(new[] { "医院", "院", "部", "区" }).ToArray();
 
         public static string CleanUp(string entry, out List<string> annotations, out string normalizedEntry)
         {
@@ -112,16 +107,21 @@ namespace Label
                 { '（', '(' },
                 { '[', '(' },
                 { '【', '(' },
+                { '{', '(' },
                 { '｛', '(' },
                 { '<', '(' },
                 { '《', '(' },
+
                 { '）', ')' },
                 { ']', ')' },
                 { '】', ')' },
+                { '}', ')' },
                 { '｝', ')' },
                 { '>', ')' },
                 { '》', ')' },
+
                 { '：', ':' },
+
                 { '0', '零' },
                 { '1', '一' },
                 { '2', '二' },
@@ -132,6 +132,8 @@ namespace Label
                 { '7', '七' },
                 { '8', '八' },
                 { '9', '九' },
+
+                { '〓', Delimiter },
                 { '、', Delimiter },
                 { '，', Delimiter },
                 { '；', Delimiter },
@@ -141,6 +143,7 @@ namespace Label
                 { '.', Delimiter },
                 { '/', Delimiter },
                 { '\\', Delimiter },
+
                 { '醫', '医' },
                 { '區', '区' },
                 { '屬', '属' }
@@ -241,9 +244,58 @@ namespace Label
             return resBuilder.ToString();
         }
 
+        private static List<string> HeuristicSplit(string str)
+        {
+            Trace.Assert(str.Length > 0);
+            var pos = new List<int>();
+            for (var i = 0; i < str.Length; i += 2)
+            {
+                i = str.IndexOf("医院", i);
+                if (i != -1)
+                {
+                    pos.Add(i);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            var names = new List<string>();
+            for (int i = pos.Count - 1, end = str.Length; i >= 0; --i)
+            {
+                // Is this a main or sub title end tag? Assume main title end.
+                var startIndex = i == 0 ? 0 : (pos[i - 1] + 2);
+                var mainTitle = str.Substring(startIndex, pos[i] + 2 - startIndex);
+                var subTitle = str.Substring(pos[i] + 2, end - pos[i] - 2); // may be empty
+                var subEndTag = SubEndTags.FirstOrDefault(tag => subTitle.EndsWith(tag));
+                // rules to reject the assumption
+                if (startIndex > 0)
+                {
+                    if (
+                        (subTitle == subEndTag) || // explicitly marked main title as sub title, e.g., "xxx医院分院"
+                        (mainTitle.Length < 8) // main title is too short; treat as sub
+                    )
+                    {
+                        subTitle = str.Substring(startIndex, end - startIndex);
+                        --i;
+                        var newStartIndex = i == 0 ? 0 : (pos[i - 1] + 2);
+                        mainTitle = str.Substring(newStartIndex, startIndex - newStartIndex);
+                        startIndex = newStartIndex;
+                    }
+                }
+                Trace.Assert(mainTitle.EndsWith("医院"));
+                names.Add(subTitle.Length > 0 ? $"{mainTitle}{SubnameDelimiter}{subTitle}" : mainTitle);
+                end = startIndex;
+            }
+            if (names.Count == 0) names.Add(str);
+            return names;
+        }
+
         private static string[] Split(string str)
         {
-            return str.Split(new[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries);
+            return str.Split(new[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries)
+                .SelectMany(part => HeuristicSplit(part))
+                .ToArray();
         }
 
         private static string RemoveNoises(string str)
