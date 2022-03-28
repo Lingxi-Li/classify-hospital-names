@@ -274,7 +274,7 @@ namespace Label
                 {
                     if (
                         (subTitle == subEndTag) || // explicitly marked main title as sub title, e.g., "xxx医院分院"
-                        (mainTitle.Length < 8) // main title is too short; treat as sub
+                        (mainTitle.Length < 5) // main title is too short; treat as sub
                     )
                     {
                         subTitle = str.Substring(startIndex, end - startIndex);
