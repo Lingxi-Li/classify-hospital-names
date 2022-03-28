@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Label
+namespace Label.Strategy
 {
-    static class Provinces
+    static class Province
     {
         public static StringBuilder Normalize(StringBuilder builder)
         {

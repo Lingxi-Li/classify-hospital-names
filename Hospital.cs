@@ -5,11 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Label.Strategy;
 
 namespace Label
 {
     class Hospital
     {
+        public const int MinTitleLen = 6;
+
         public string OriginalEntry { get; private set; }
         public string NormalizedEntry { get; private set; }
         public List<string> Names { get; private set; }
@@ -21,7 +24,7 @@ namespace Label
             List<string> annotations;
             string normalizedEntry;
             var cleanedup = CleanUp(entry, out annotations, out normalizedEntry);
-            var names = Reconcile(cleanedup, annotations).Select(n => n.Replace("附属", null)).ToArray();
+            var names = Reconcile(cleanedup, annotations).ToArray();
             var subnames = new List<string>(annotations.Count);
             var annos = new List<string>(annotations.Count);
             foreach (var annotation in annotations)
@@ -85,12 +88,13 @@ namespace Label
         private const char Delimiter = '\n';
         private const char AliasTagChr = '\0';
 
-        // required to be two-char string
+        // must be two-char long
         private static string[] SubEndTags = new[]
         {
             "分院",
             "分部",
-            "院区"
+            "院区",
+            SubnameConverter.EndTag
         };
         private static string[] MoreSubEndTags = SubEndTags.Concat(new[] { "医院", "院", "部", "区" }).ToArray();
 
@@ -154,7 +158,24 @@ namespace Label
                 if (remove.Contains(c)) continue;
                 builder.Append(map.TryGetValue(c, out char mapped) ? mapped : c);
             }
-            Provinces.Normalize(builder);
+            var trim = new[]
+            {
+                "附属"
+            };
+            foreach (var noise in trim)
+            {
+                builder.Replace(noise, null);
+            }
+            Province.Normalize(builder);
+            var subnameConverter = new SubnameConverter(new[]
+            {
+                new KeyValuePair<string, string>("医院妇女儿童医院", "医院妇女儿童"),
+                new KeyValuePair<string, string>("医院集团总医院", "医院总"),
+                new KeyValuePair<string, string>("医院传染病医院", "医院传染病"),
+                new KeyValuePair<string, string>("医院集团中心医院", "医院中心"),
+                new KeyValuePair<string, string>("医院妇产儿童医院", "医院妇产儿童")
+            });
+            subnameConverter.Convert(ref builder);
             normalizedEntry = builder.ToString();
 
             // process annotations
@@ -274,7 +295,7 @@ namespace Label
                 {
                     if (
                         (subTitle == subEndTag) || // explicitly marked main title as sub title, e.g., "xxx医院分院"
-                        (mainTitle.Length < 5) // main title is too short; treat as sub
+                        (mainTitle.Length < MinTitleLen) // main title is too short; treat as sub
                     )
                     {
                         subTitle = str.Substring(startIndex, end - startIndex);
