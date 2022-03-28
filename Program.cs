@@ -18,6 +18,7 @@ namespace Label
             Console.OutputEncoding = Encoding.UTF8;
             string namesPath, labelsPath, outputPath;
             bool useGui = !Valid(args);
+            int threadCnt = 0;
             if (useGui)
             {
                 Application.EnableVisualStyles();
@@ -28,6 +29,7 @@ namespace Label
                     namesPath = gui.Inputs.NamesFilePath;
                     labelsPath = gui.Inputs.LabelsFilePath;
                     outputPath = gui.Inputs.OutputFilePath;
+                    threadCnt = gui.Inputs.Concurrency;
                 }
                 else
                 {
@@ -39,8 +41,9 @@ namespace Label
                 namesPath = args[0];
                 labelsPath = args[1];
                 outputPath = args[2];
+                threadCnt = GUI.Properties.DefaultThreadCount;
             }
-            Run(namesPath, labelsPath, outputPath, GUI.Properties.DefaultThreadCount);
+            Run(namesPath, labelsPath, outputPath, threadCnt);
             if (useGui)
             {
                 Console.Write("Press <Enter> to quit.");
