@@ -47,6 +47,7 @@ namespace Label
             var bestMatch = TryFindMatchByNormalizedEntry(h.NormalizedEntry);
             if (bestMatch != null) return bestMatch;
 
+            if (h.NormalizedEntry.Length < Hospital.MinTitleLen) return null;
             h.Names.Sort((n0, n1) => n1.Length - n0.Length);
             foreach (var name in h.Names)
             {
