@@ -54,6 +54,7 @@
     <Compile Include="LabelEngine.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Provinces.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup>
