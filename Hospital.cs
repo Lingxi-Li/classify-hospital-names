@@ -154,6 +154,7 @@ namespace Label
                 if (remove.Contains(c)) continue;
                 builder.Append(map.TryGetValue(c, out char mapped) ? mapped : c);
             }
+            Provinces.Normalize(builder);
             normalizedEntry = builder.ToString();
 
             // process annotations
