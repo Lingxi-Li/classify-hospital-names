@@ -61,7 +61,7 @@ namespace Label
             {
                 OriginalEntry = entry,
                 NormalizedEntry = normalizedEntry,
-                Names = names.NonEmptyDistinct().ToList(),
+                Names = names.NonEmptyDistinct().OrderBy(n => -n.Length).ToList(),
                 Subnames = subnames.NonEmptyDistinct().ToArray(),
                 Annotations = annos.NonEmptyDistinct().ToArray()
             };
@@ -167,6 +167,15 @@ namespace Label
                 builder.Replace(noise, null);
             }
             Province.Normalize(builder);
+            // map substring
+            //var substrMap = new[,]
+            //{
+            //    { "中医医院", "中医院" }
+            //};
+            //for (var i = 0; i < substrMap.GetLength(0); ++i)
+            //{
+            //    builder.Replace(substrMap[i, 0], substrMap[i, 1]);
+            //}
             var subnameConverter = new SubnameConverter(new[]
             {
                 new KeyValuePair<string, string>("医院妇女儿童医院", "医院妇女儿童"),
