@@ -98,7 +98,7 @@ namespace Label
         };
         private static string[] MoreSubEndTags = SubEndTags.Concat(new[] { "医院", "院", "部", "区" }).ToArray();
 
-        public static string CleanUp(string entry, out List<string> annotations, out string normalizedEntry)
+        private static string Normalize(string entry)
         {
             // char by char processing
             var remove = new HashSet<char>
@@ -167,15 +167,6 @@ namespace Label
                 builder.Replace(noise, null);
             }
             Province.Normalize(builder);
-            // map substring
-            //var substrMap = new[,]
-            //{
-            //    { "中医医院", "中医院" }
-            //};
-            //for (var i = 0; i < substrMap.GetLength(0); ++i)
-            //{
-            //    builder.Replace(substrMap[i, 0], substrMap[i, 1]);
-            //}
             var subnameConverter = new SubnameConverter(new[]
             {
                 new KeyValuePair<string, string>("医院妇女儿童医院", "医院妇女儿童"),
@@ -185,7 +176,13 @@ namespace Label
                 new KeyValuePair<string, string>("医院妇产儿童医院", "医院妇产儿童")
             });
             subnameConverter.Convert(ref builder);
-            normalizedEntry = builder.ToString();
+            return builder.ToString();
+        }
+
+        public static string CleanUp(string entry, out List<string> annotations, out string normalizedEntry)
+        {
+            normalizedEntry = Normalize(entry);
+            var builder = new StringBuilder(normalizedEntry);
 
             // process annotations
             var AliasTagStrs = new[]
