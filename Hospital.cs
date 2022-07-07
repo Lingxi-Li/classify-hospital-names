@@ -57,7 +57,7 @@ namespace Label
                     }
                 }
             }
-            return new Hospital
+            var h = new Hospital
             {
                 OriginalEntry = entry,
                 NormalizedEntry = normalizedEntry,
@@ -65,6 +65,7 @@ namespace Label
                 Subnames = subnames.NonEmptyDistinct().ToArray(),
                 Annotations = annos.NonEmptyDistinct().ToArray()
             };
+            return h;
         }
 
         private static string[] GetSubnameAliases(string subname, string endTag)
@@ -158,14 +159,19 @@ namespace Label
                 if (remove.Contains(c)) continue;
                 builder.Append(map.TryGetValue(c, out char mapped) ? mapped : c);
             }
-            var trim = new[]
+
+            // map substring
+            var substrMap = new[,]
             {
-                "附属"
+                { "附属", null },
+                { "中医医院", "中医院" },
+                { "中西医结合医院", "X医院" }
             };
-            foreach (var noise in trim)
+            for (var i = 0; i < substrMap.GetLength(0); ++i)
             {
-                builder.Replace(noise, null);
+                builder.Replace(substrMap[i, 0], substrMap[i, 1]);
             }
+
             Province.Normalize(builder);
             var subnameConverter = new SubnameConverter(new[]
             {
