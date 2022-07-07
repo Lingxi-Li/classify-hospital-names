@@ -17,6 +17,11 @@ namespace Label.Strategy
             return builder;
         }
 
+        public static bool ProvinceRooted(string name)
+        {
+            return map.Values.Any(p => name.Contains(p));
+        }
+
         private static Dictionary<string, string> map = new Dictionary<string, string>
         {
             { "河北省", "河北" },
