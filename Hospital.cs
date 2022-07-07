@@ -165,7 +165,8 @@ namespace Label
             {
                 { "附属", null },
                 { "中医医院", "中医院" },
-                { "中西医结合医院", "X医院" }
+                { "中西医结合医院", "X医院" },
+                { "医院大学", "H大学" }
             };
             for (var i = 0; i < substrMap.GetLength(0); ++i)
             {
@@ -303,7 +304,7 @@ namespace Label
                 var subTitle = str.Substring(pos[i] + 2, end - pos[i] - 2); // may be empty
                 var subEndTag = SubEndTags.FirstOrDefault(tag => subTitle.EndsWith(tag));
                 // rules to reject the assumption
-                if (startIndex > 0)
+                if (startIndex > 0 && !Province.ProvinceRooted(mainTitle))
                 {
                     if (
                         (subTitle == subEndTag) || // explicitly marked main title as sub title, e.g., "xxx医院分院"
