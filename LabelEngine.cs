@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Label
 {
-    class LabelEngine
+    public class LabelEngine
     {
         private class NameRef
         {
@@ -17,8 +16,12 @@ namespace Label
         }
 
         public LabelEngine(string labelsFilePath)
+            : this(Util.EnumerateAllLines(labelsFilePath))
+        {}
+
+        public LabelEngine(IEnumerable<string> entries)
         {
-            Labels = Util.EnumerateAllLines(labelsFilePath)
+            Labels = entries
                 .Where(ln => !string.IsNullOrWhiteSpace(ln))
                 .Select(entry => Hospital.Parse(entry))
                 .OrderBy(h => h.NormalizedEntry, StringComparer.OrdinalIgnoreCase)
@@ -27,30 +30,23 @@ namespace Label
                 .SelectMany(h => h.Names.Select(n => new NameRef { Name = n, Hospital = h }))
                 .OrderBy(r => r.Name.Length)
                 .ToList();
-            using (var file = new StreamWriter("NameRefList.txt"))
-            {
-                for (var i = 0; i < Names.Count; ++i)
-                {
-                    file.WriteLine($"{i}: {Names[i].Name}");
-                }
-            }
         }
 
         // DEPRECATED
         // requires bi-directional all-name match
-        public Hospital TryLabelV2(string entry)
-        {
-            var h = Hospital.Parse(entry);
-            foreach (var candi in Labels)
-            {
-                if (AllNamesMatch(h.Names, candi.Names)
-                    && SubnamesMatch(h, candi))
-                {
-                    return candi;
-                }
-            }
-            return null;
-        }
+        //public Hospital TryLabelV2(string entry)
+        //{
+        //    var h = Hospital.Parse(entry);
+        //    foreach (var candi in Labels)
+        //    {
+        //        if (AllNamesMatch(h.Names, candi.Names)
+        //            && SubnamesMatch(h, candi))
+        //        {
+        //            return candi;
+        //        }
+        //    }
+        //    return null;
+        //}
 
         public Hospital TryLabel(string entry)
         {
