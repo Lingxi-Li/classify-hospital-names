@@ -25,28 +25,43 @@ namespace Label
             string normalizedEntry;
             var cleanedup = CleanUp(entry, out annotations, out normalizedEntry);
             var names = Reconcile(cleanedup, annotations).ToArray();
-            var subnames = new List<string>(annotations.Count);
-            var annos = new List<string>(annotations.Count);
-            foreach (var annotation in annotations)
+            var subnames = IdentifySubnames(ref annotations, names);
+            var h = new Hospital
             {
-                var subEndTag = SubEndTags.FirstOrDefault(tag => annotation.EndsWith(tag));
+                OriginalEntry = entry,
+                NormalizedEntry = normalizedEntry,
+                Names = names.NonEmptyDistinct().OrderBy(n => -n.Length).ToList(),
+                Subnames = subnames.NonEmptyDistinct().ToArray(),
+                Annotations = annotations.NonEmptyDistinct().ToArray()
+            };
+            return h;
+        }
+
+        private static List<string> IdentifySubnames(ref List<string> annotations, string[] names)
+        {
+            var subnames = new List<string>();
+            var otherAnnotations = new List<string>();
+            foreach (var anno in annotations)
+            {
+                Trace.Assert(!anno.Contains("医院"));
+                var subEndTag = MoreSubEndTags.FirstOrDefault(tag => anno.EndsWith(tag));
                 if (subEndTag != null)
                 {
-                    subnames.AddRange(GetSubnameAliases(annotation, subEndTag));
+                    subnames.AddRange(GetSubnameAliases(anno, subEndTag));
                 }
                 else
                 {
-                    annos.Add(annotation);
+                    otherAnnotations.Add(anno);
                 }
             }
             for (var i = 0; i < names.Length; ++i)
             {
-                var parts = names[i].Split(new[] { SubnameDelimiter }, StringSplitOptions.RemoveEmptyEntries);
+                var parts = names[i].Split(SubnameDelimiter);
                 Trace.Assert(parts.Length <= 2);
                 names[i] = parts[0];
                 if (parts.Length == 2)
                 {
-                    var subEndTag = SubEndTags.FirstOrDefault(tag => parts[1].EndsWith(tag));
+                    var subEndTag = MoreSubEndTags.FirstOrDefault(tag => parts[1].EndsWith(tag));
                     if (subEndTag != null)
                     {
                         subnames.AddRange(GetSubnameAliases(parts[1], subEndTag));
@@ -58,15 +73,8 @@ namespace Label
                     }
                 }
             }
-            var h = new Hospital
-            {
-                OriginalEntry = entry,
-                NormalizedEntry = normalizedEntry,
-                Names = names.NonEmptyDistinct().OrderBy(n => -n.Length).ToList(),
-                Subnames = subnames.NonEmptyDistinct().ToArray(),
-                Annotations = annos.NonEmptyDistinct().ToArray()
-            };
-            return h;
+            annotations = otherAnnotations;
+            return subnames;            
         }
 
         private static string[] GetSubnameAliases(string subname, string endTag)
