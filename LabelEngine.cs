@@ -32,22 +32,6 @@ namespace Label
                 .ToList();
         }
 
-        // DEPRECATED
-        // requires bi-directional all-name match
-        //public Hospital TryLabelV2(string entry)
-        //{
-        //    var h = Hospital.Parse(entry);
-        //    foreach (var candi in Labels)
-        //    {
-        //        if (AllNamesMatch(h.Names, candi.Names)
-        //            && SubnamesMatch(h, candi))
-        //        {
-        //            return candi;
-        //        }
-        //    }
-        //    return null;
-        //}
-
         public Hospital TryLabel(string entry)
         {
             var h = Hospital.Parse(entry);
@@ -123,46 +107,20 @@ namespace Label
                 && (main.Length - sub.Length != 1); // e.g., 沙县中医院 and 金沙县中医院
         }
 
-        // bi-directional all-name match
-        private static bool AllNamesMatch(List<string> namesA , List<string> namesB)
-        {
-            foreach (var name in namesA)
-            {
-                if (!namesB.Any(n => NameMatch(n, name))) return false;
-            }
-            foreach (var name in namesB)
-            {
-                if (!namesA.Any(n => NameMatch(n, name))) return false;
-            }
-            return true;
-        }
-
         // bi-directional
         private static bool SubnamesMatch(Hospital a, Hospital b)
         {
-            string[] subnamesA = a.Subnames, subnamesB = b.Subnames;
-            if (subnamesA.Length == 0 && subnamesB.Length == 0) return true;
-            foreach (var subname in subnamesA)
-            {
-                if (subnamesB.Any(s => s == subname)) return true;
-                if (b.Names.Any(n => n.Contains(subname))) return true;
-            }
-            foreach (var subname in subnamesB)
-            {
-                if (a.Names.Any(n => n.Contains(subname))) return true;
-            }
-            return false;
+            return ContainsAnySubname(a, b.Subnames)
+                && ContainsAnySubname(b, a.Subnames);
         }
 
-        private static int DiffNames(string a, string b)
+        private static bool ContainsAnySubname(Hospital h, string[] subnames)
         {
-            if (a.Length > b.Length)
-            {
-                var temp = a;
-                a = b;
-                b = temp;
-            }
-            return b.EndsWith(a) ? (b.Length - a.Length) : int.MaxValue;
+            if (subnames.Length == 0) return true;
+            if (h.Subnames.Intersect(subnames).Any()) return true;
+            return h.Names.Any(
+                n => subnames.Any(sn => n.Contains(sn))
+            );
         }
 
         public List<Hospital> Labels { get; private set; }
