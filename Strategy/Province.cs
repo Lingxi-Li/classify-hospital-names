@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Label.Strategy
@@ -20,6 +21,36 @@ namespace Label.Strategy
         public static bool ProvinceRooted(string name)
         {
             return map.Values.Any(p => name.Contains(p));
+        }
+
+        private static string[] DistrictTags = new[]
+        {
+            "市",
+            "州",
+            "区",
+            "县",
+            "镇"
+        };
+        //private static Regex DistrictTagRegex = new Regex($"({string.Join("|", DistrictTags)})");
+
+        public static IEnumerable<string> TrimDistrictTag(this IEnumerable<string> range)
+        {
+            foreach (var str in range)
+            {
+                if (str.Length <= 4)
+                {
+                    yield return str;
+                    continue;
+                }
+                var builder = new StringBuilder(str.Substring(2, str.Length - 4));
+                foreach (var tag in DistrictTags)
+                {
+                    builder.Replace(tag, null);
+                }
+                var prefix = str.Substring(0, 2);
+                var suffix = str.Substring(str.Length - 2);
+                yield return $"{prefix}{builder}{suffix}";
+            }
         }
 
         private static Dictionary<string, string> map = new Dictionary<string, string>

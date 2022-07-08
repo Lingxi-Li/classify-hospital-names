@@ -30,8 +30,8 @@ namespace Label
             {
                 OriginalEntry = entry,
                 NormalizedEntry = normalizedEntry,
-                Names = names.NonEmptyDistinct().OrderBy(n => -n.Length).ToList(),
-                Subnames = subnames.NonEmptyDistinct().ToArray(),
+                Names = names.TrimDistrictTag().NonEmptyDistinct().OrderBy(n => -n.Length).ToList(),
+                Subnames = subnames.TrimDistrictTag().NonEmptyDistinct().ToArray(),
                 Annotations = annotations.NonEmptyDistinct().ToArray()
             };
             return h;
