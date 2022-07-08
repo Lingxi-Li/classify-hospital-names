@@ -9,7 +9,7 @@ using Label.Strategy;
 
 namespace Label
 {
-    class Hospital
+    public class Hospital
     {
         public const int MinTitleLen = 6;
 
