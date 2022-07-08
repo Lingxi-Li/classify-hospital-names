@@ -42,6 +42,7 @@ namespace Label
             for (var i = 0; i < names.Length; ++i)
             {
                 var parts = names[i].Split(new[] { SubnameDelimiter }, StringSplitOptions.RemoveEmptyEntries);
+                Trace.Assert(parts.Length <= 2);
                 names[i] = parts[0];
                 if (parts.Length == 2)
                 {
@@ -85,12 +86,12 @@ namespace Label
 
         ////////////////////
 
-        private const char SubnameDelimiter = '\t';
+        public const char SubnameDelimiter = '\t';
         private const char Delimiter = '\n';
         private const char AliasTagChr = '\0';
 
         // must be two-char long
-        private static string[] SubEndTags = new[]
+        public static string[] SubEndTags = new[]
         {
             "分院",
             "分部",
@@ -105,7 +106,17 @@ namespace Label
             var remove = new HashSet<char>
             {
                 ' ',
-                '　'
+                '　',
+                '〓',
+                '、',
+                '，',
+                '；',
+                '。',
+                ',',
+                ';',
+                '.',
+                '/',
+                '\\'
             };
             var map = new Dictionary<char, char>
             {
@@ -138,16 +149,16 @@ namespace Label
                 { '8', '八' },
                 { '9', '九' },
 
-                { '〓', Delimiter },
-                { '、', Delimiter },
-                { '，', Delimiter },
-                { '；', Delimiter },
-                { '。', Delimiter },
-                { ',', Delimiter },
-                { ';', Delimiter },
-                { '.', Delimiter },
-                { '/', Delimiter },
-                { '\\', Delimiter },
+                //{ '〓', Delimiter },
+                //{ '、', Delimiter },
+                //{ '，', Delimiter },
+                //{ '；', Delimiter },
+                //{ '。', Delimiter },
+                //{ ',', Delimiter },
+                //{ ';', Delimiter },
+                //{ '.', Delimiter },
+                //{ '/', Delimiter },
+                //{ '\\', Delimiter },
 
                 { '醫', '医' },
                 { '區', '区' },
@@ -166,7 +177,8 @@ namespace Label
                 { "附属", null },
                 { "中医医院", "中医院" },
                 { "中西医结合医院", "X医院" },
-                { "医院大学", "H大学" }
+                { "医院大学", "H大学" },
+                { "保健院", "保健医院" }
             };
             for (var i = 0; i < substrMap.GetLength(0); ++i)
             {
@@ -279,57 +291,10 @@ namespace Label
             return resBuilder.ToString();
         }
 
-        private static List<string> HeuristicSplit(string str)
-        {
-            Trace.Assert(str.Length > 0);
-            var pos = new List<int>();
-            for (var i = 0; i < str.Length; i += 2)
-            {
-                i = str.IndexOf("医院", i);
-                if (i != -1)
-                {
-                    pos.Add(i);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            var names = new List<string>();
-            for (int i = pos.Count - 1, end = str.Length; i >= 0; --i)
-            {
-                // Is this a main or sub title end tag? Assume main title end.
-                var startIndex = i == 0 ? 0 : (pos[i - 1] + 2);
-                var mainTitle = str.Substring(startIndex, pos[i] + 2 - startIndex);
-                var subTitle = str.Substring(pos[i] + 2, end - pos[i] - 2); // may be empty
-                var subEndTag = SubEndTags.FirstOrDefault(tag => subTitle.EndsWith(tag));
-                // rules to reject the assumption
-                if (startIndex > 0 && !Province.ProvinceRooted(mainTitle))
-                {
-                    if (
-                        (subTitle == subEndTag) || // explicitly marked main title as sub title, e.g., "xxx医院分院"
-                        (mainTitle.Length < MinTitleLen) // main title is too short; treat as sub
-                    )
-                    {
-                        subTitle = str.Substring(startIndex, end - startIndex);
-                        --i;
-                        var newStartIndex = i == 0 ? 0 : (pos[i - 1] + 2);
-                        mainTitle = str.Substring(newStartIndex, startIndex - newStartIndex);
-                        startIndex = newStartIndex;
-                    }
-                }
-                Trace.Assert(mainTitle.EndsWith("医院"));
-                names.Add(subTitle.Length > 0 ? $"{mainTitle}{SubnameDelimiter}{subTitle}" : mainTitle);
-                end = startIndex;
-            }
-            if (names.Count == 0) names.Add(str);
-            return names;
-        }
-
         private static string[] Split(string str)
         {
             return str.Split(new[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries)
-                .SelectMany(part => HeuristicSplit(part))
+                .SelectMany(part => HeuristicSplitter.Split(part))
                 .ToArray();
         }
 

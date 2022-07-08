@@ -19,6 +19,7 @@ namespace Label
         public LabelEngine(string labelsFilePath)
         {
             Labels = Util.EnumerateAllLines(labelsFilePath)
+                .Where(ln => !string.IsNullOrWhiteSpace(ln))
                 .Select(entry => Hospital.Parse(entry))
                 .OrderBy(h => h.NormalizedEntry, StringComparer.OrdinalIgnoreCase)
                 .ToList();
