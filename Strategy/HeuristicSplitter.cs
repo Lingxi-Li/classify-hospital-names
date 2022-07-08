@@ -112,8 +112,15 @@ namespace Label.Strategy
 
         private static bool IsSubname(string name)
         {
-            return !Province.ProvinceRooted(name)
-                && name.Length < Hospital.MinTitleLen;
+            if (Province.ProvinceRooted(name)) return false;
+            if (name.EndsWith("医院"))
+            {
+                return name.Length < Hospital.MinTitleLen;
+            }
+            else
+            {
+                return true;
+            }
         }
     }
 }
