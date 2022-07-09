@@ -41,10 +41,11 @@ namespace Label
         public Hospital TryLabel(string entry)
         {
             var h = Hospital.Parse(entry);
-            var bestMatch = TryFindMatchByNormalizedEntry(h.NormalizedEntry);
-            if (bestMatch != null) return bestMatch;
+            Hospital bestMatch;
+            //bestMatch = TryFindMatchByNormalizedEntry(h.NormalizedEntry);
+            //if (bestMatch != null) return bestMatch;
+            //if (h.NormalizedEntry.Length < Hospital.MinTitleLen) return null;
 
-            if (h.NormalizedEntry.Length < Hospital.MinTitleLen) return null;
             foreach (var name in h.Names)
             {
                 bestMatch = FindBestMatch(name, h, out int diff);
