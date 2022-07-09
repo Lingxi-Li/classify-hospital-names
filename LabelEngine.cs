@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Label.Strategy;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,6 +14,7 @@ namespace Label
         {
             public string Name { get; set; }
             public Hospital Hospital { get; set; }
+            public string[] NameSigs { get; set; }
         }
 
         public LabelEngine(string labelsFilePath)
@@ -30,6 +32,10 @@ namespace Label
                 .SelectMany(h => h.Names.Select(n => new NameRef { Name = n, Hospital = h }))
                 .OrderBy(r => r.Name.Length)
                 .ToList();
+            foreach (var name in Names)
+            {
+                name.NameSigs = NameMatcher.ComputeNameSigs(name.Name);
+            }
         }
 
         public Hospital TryLabel(string entry)
@@ -71,7 +77,7 @@ namespace Label
                 int d;
                 if ((d = Math.Abs(name.Length - nameRef.Name.Length)) > diff) break;
                 if (!SubnamesMatch(h, nameRef.Hospital)) continue;
-                if (!NameMatch(name, nameRef.Name)) continue;
+                if (!NameMatcher.Matches(name, nameRef.Name, nameRef.NameSigs)) continue;
                 // matched
                 var newAnnoMatchCnt = AnnotationMatchCount(h, nameRef.Hospital);
                 if (d < diff || newAnnoMatchCnt > annoMatchCnt)
@@ -87,24 +93,6 @@ namespace Label
         private static int AnnotationMatchCount(Hospital a, Hospital b)
         {
             return a.Annotations.Intersect(b.Annotations).Count();
-        }
-
-        private static bool NameMatch(string a, string b)
-        {
-            string sub, main;
-            if (a.Length <= b.Length)
-            {
-                sub = a;
-                main = b;
-            }
-            else
-            {
-                sub = b;
-                main = a;
-            }
-            return
-                main.EndsWith(sub)
-                && (main.Length - sub.Length != 1); // e.g., 沙县中医院 and 金沙县中医院
         }
 
         // bi-directional
