@@ -42,6 +42,7 @@ namespace Label
                 labelsPath = args[1];
                 outputPath = args[2];
                 threadCnt = GUI.Properties.DefaultThreadCount;
+                //threadCnt = 1;
             }
             Run(namesPath, labelsPath, outputPath, threadCnt);
             if (useGui)
@@ -78,6 +79,7 @@ namespace Label
             var startTime = DateTime.Now;
             var names = File.ReadAllLines(namesPath);
             var labelEngine = new LabelEngine(labelsPath);
+            Console.WriteLine("Label engine initialized.");
             var labels = new Hospital[names.Length];
             var tasks = new List<Task<int>>();
             for (var i = 0; i < threadCnt - 1; ++i)
