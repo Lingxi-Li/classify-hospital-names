@@ -86,6 +86,10 @@ namespace Label.Strategy
 
         private static bool GeneralMatch(string a, string b)
         {
+            //if (Math.Min(a.Length, b.Length) < Hospital.MinTitleLen)
+            //{
+            //    return a == b;
+            //}
             string sub, main;
             if (a.Length <= b.Length)
             {
