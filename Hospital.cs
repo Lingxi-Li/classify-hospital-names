@@ -29,7 +29,7 @@ namespace Label
             var h = new Hospital
             {
                 OriginalEntry = entry,
-                NormalizedEntry = normalizedEntry,
+                NormalizedEntry = normalizedEntry.TrimDistrictTag(),
                 Names = names.TrimDistrictTag().NonEmptyDistinct().OrderBy(n => -n.Length).ToList(),
                 Subnames = subnames.TrimDistrictTag().NonEmptyDistinct().ToArray(),
                 Annotations = annotations.NonEmptyDistinct().ToArray()
@@ -186,7 +186,9 @@ namespace Label
                 { "中医医院", "中医院" },
                 { "中西医结合医院", "X医院" },
                 { "医院大学", "H大学" },
-                { "保健院", "保健医院" }
+                { "保健院", "保健医院" },
+                { "防治院", "防治医院" },
+                { "人民医院", "医院" }
             };
             for (var i = 0; i < substrMap.GetLength(0); ++i)
             {
