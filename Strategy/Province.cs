@@ -27,30 +27,30 @@ namespace Label.Strategy
         {
             "市",
             "州",
+            "社区",
             "区",
             "县",
-            "镇"
+            "镇",
+            "街道"
         };
         //private static Regex DistrictTagRegex = new Regex($"({string.Join("|", DistrictTags)})");
 
+        public static string TrimDistrictTag(this string str)
+        {
+            if (str.Length <= 4) return str;
+            var builder = new StringBuilder(str.Substring(2, str.Length - 4));
+            foreach (var tag in DistrictTags)
+            {
+                builder.Replace(tag, null);
+            }
+            var prefix = str.Substring(0, 2);
+            var suffix = str.Substring(str.Length - 2);
+            return $"{prefix}{builder}{suffix}";
+        }
+
         public static IEnumerable<string> TrimDistrictTag(this IEnumerable<string> range)
         {
-            foreach (var str in range)
-            {
-                if (str.Length <= 4)
-                {
-                    yield return str;
-                    continue;
-                }
-                var builder = new StringBuilder(str.Substring(2, str.Length - 4));
-                foreach (var tag in DistrictTags)
-                {
-                    builder.Replace(tag, null);
-                }
-                var prefix = str.Substring(0, 2);
-                var suffix = str.Substring(str.Length - 2);
-                yield return $"{prefix}{builder}{suffix}";
-            }
+            return range.Select(str => str.TrimDistrictTag());
         }
 
         private static Dictionary<string, string> map = new Dictionary<string, string>
