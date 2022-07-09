@@ -84,7 +84,7 @@ namespace Label
             MainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             Controls.Add(MainLayout);
 
-            Text = "Label v1.4";
+            Text = "Label v1.5";
             Width = 400;
             Height = 225;
             MinimumSize = new System.Drawing.Size(Width, Height);
