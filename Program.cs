@@ -12,13 +12,21 @@ namespace Label
 {
     class Program
     {
+        enum Mode
+        {
+            Invalid,
+            Classification,
+            Clustering
+        }
+
         [STAThread]
         static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
             string namesPath, labelsPath, outputPath;
-            bool useGui = !Valid(args);
-            int threadCnt = 0;
+            var mode = ParseMode(args);
+            bool useGui = mode == Mode.Invalid;
+            int threadCnt = GUI.Properties.DefaultThreadCount;
             if (useGui)
             {
                 Application.EnableVisualStyles();
@@ -30,6 +38,9 @@ namespace Label
                     labelsPath = gui.Inputs.LabelsFilePath;
                     outputPath = gui.Inputs.OutputFilePath;
                     threadCnt = gui.Inputs.Concurrency;
+                    mode = string.IsNullOrWhiteSpace(labelsPath)
+                        ? Mode.Clustering
+                        : Mode.Classification;
                 }
                 else
                 {
@@ -38,13 +49,31 @@ namespace Label
             }
             else
             {
-                namesPath = args[0];
-                labelsPath = args[1];
-                outputPath = args[2];
-                threadCnt = GUI.Properties.DefaultThreadCount;
+                switch (mode)
+                {
+                    case Mode.Classification:
+                        namesPath = args[0];
+                        labelsPath = args[1];
+                        outputPath = args[2];
+                        break;
+                    default:
+                        namesPath = args[0];
+                        labelsPath = null;
+                        outputPath = args[1];
+                        break;
+                }
                 //threadCnt = 1;
             }
-            Run(namesPath, labelsPath, outputPath, threadCnt);
+
+            if (mode == Mode.Classification)
+            {
+                Classify(namesPath, labelsPath, outputPath, threadCnt);
+            }
+            else
+            {
+                Cluster(namesPath, outputPath);
+            }
+            
             if (useGui)
             {
                 Console.Write("Press <Enter> to quit.");
@@ -74,7 +103,7 @@ namespace Label
             return matchCnt;
         }
 
-        static void Run(string namesPath, string labelsPath, string outputPath, int threadCnt)
+        static void Classify(string namesPath, string labelsPath, string outputPath, int threadCnt)
         {
             var startTime = DateTime.Now;
             var names = File.ReadAllLines(namesPath);
@@ -108,22 +137,27 @@ namespace Label
             Console.WriteLine();
         }
 
-        static bool Valid(string[] args)
+        static void Cluster(string namesPath, string outputPath)
         {
-            if (args.Length != 3)
+
+        }
+
+        static Mode ParseMode(string[] args)
+        {
+            if (args.Length < 2 || args.Length > 3)
             {
                 PrintUsage();
-                return false;
+                return Mode.Invalid;
             }
-            var invalidPath = args.Take(2).FirstOrDefault(p => !File.Exists(p));
+            var invalidPath = args.Take(args.Length - 1).FirstOrDefault(p => !File.Exists(p));
             if (invalidPath != null)
             {
                 Console.WriteLine($"File not found: {invalidPath}");
                 Console.WriteLine();
                 PrintUsage();
-                return false;
+                return Mode.Invalid;
             }
-            return true;
+            return args.Length == 2 ? Mode.Clustering : Mode.Classification;
         }
 
         static void PrintAbout()
@@ -133,10 +167,16 @@ namespace Label
 
         static void PrintUsage()
         {
-            Console.WriteLine($"Usage: Label.exe \"<names>\" \"<labels>\" \"<output>\"");
-            Console.WriteLine("<names>: File path to external names");
-            Console.WriteLine("<labels>: File path to internal names");
-            Console.WriteLine("<output>: File path to output to");
+            Console.WriteLine("Classification mode:");
+            Console.WriteLine("  Usage: Label.exe \"<names>\" \"<labels>\" \"<output>\"");
+            Console.WriteLine("  <names>: File path to external names");
+            Console.WriteLine("  <labels>: File path to internal names");
+            Console.WriteLine("  <output>: File path to output to");
+            Console.WriteLine();
+            Console.WriteLine("Clustering mode:");
+            Console.WriteLine("  Usage: Label.exe \"<names>\" \"<output>\"");
+            Console.WriteLine("  <names>: File path to names");
+            Console.WriteLine("  <output>: File path to output to");
             Console.WriteLine();
             PrintAbout();
             Console.WriteLine();

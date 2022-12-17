@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Drawing.Design;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -115,10 +116,9 @@ namespace Label
         {
             return
                 string.IsNullOrWhiteSpace(Inputs.NamesFilePath) ? "'NamesFilePath' 未指定" :
-                string.IsNullOrWhiteSpace(Inputs.LabelsFilePath) ? "'LabelsFilePath' 未指定" :
                 string.IsNullOrWhiteSpace(Inputs.OutputFilePath) ? "'OutputFilePath' 未指定" :
                 !File.Exists(Inputs.NamesFilePath) ? $"指定文件 '{Inputs.NamesFilePath}' 不存在" :
-                !File.Exists(Inputs.LabelsFilePath) ? $"指定文件 '{Inputs.LabelsFilePath}' 不存在" :
+                !string.IsNullOrWhiteSpace(Inputs.LabelsFilePath) && !File.Exists(Inputs.LabelsFilePath) ? $"指定文件 '{Inputs.LabelsFilePath}' 不存在" :
                 (Inputs.Concurrency < 1 || Inputs.Concurrency > Environment.ProcessorCount) ? $"'Concurrency' should be within [1, {Environment.ProcessorCount}]" :
                 null;
         }
