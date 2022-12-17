@@ -97,7 +97,7 @@ namespace Label
         }
 
         // bi-directional
-        private static bool SubnamesMatch(Hospital a, Hospital b)
+        public static bool SubnamesMatch(Hospital a, Hospital b)
         {
             return ContainsAnySubname(a, b.Subnames)
                 && ContainsAnySubname(b, a.Subnames);

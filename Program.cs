@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Label.Strategy;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -65,6 +67,7 @@ namespace Label
                 //threadCnt = 1;
             }
 
+            var startTime = DateTime.Now;
             if (mode == Mode.Classification)
             {
                 Classify(namesPath, labelsPath, outputPath, threadCnt);
@@ -73,7 +76,10 @@ namespace Label
             {
                 Cluster(namesPath, outputPath);
             }
-            
+            var duration = (DateTime.Now - startTime).ToString("c").Split('.')[0];
+            Console.WriteLine($"Time elapsed: {duration}");
+            Console.WriteLine();
+
             if (useGui)
             {
                 Console.Write("Press <Enter> to quit.");
@@ -105,7 +111,6 @@ namespace Label
 
         static void Classify(string namesPath, string labelsPath, string outputPath, int threadCnt)
         {
-            var startTime = DateTime.Now;
             var names = File.ReadAllLines(namesPath);
             var labelEngine = new LabelEngine(labelsPath);
             Console.WriteLine("Label engine initialized.");
@@ -132,14 +137,62 @@ namespace Label
             }
             Console.WriteLine("All done.");
             Console.WriteLine();
-            var duration = (DateTime.Now - startTime).ToString("c").Split('.')[0];
-            Console.WriteLine($"Time elapsed: {duration}");
-            Console.WriteLine();
         }
 
         static void Cluster(string namesPath, string outputPath)
         {
+            var hospitals = Util.EnumerateAllLines(namesPath)
+                .Where(ln => !string.IsNullOrWhiteSpace(ln))
+                .Select(name => Hospital.Parse(name))
+                .OrderBy(h => -h.NormalizedEntry.Length)
+                .ToArray();
+            using (var file = File.CreateText(outputPath))
+            {
+                var distinctHospitals = new List<Hospital>();
+                var distinctHospitalNameSigs = new List<List<string[]>>();
+                Console.WriteLine("0% processed");
+                int cur = 0, progress = 0;
+                foreach (var h in hospitals)
+                {
+                    var currentProgress = (cur++ * 100) / hospitals.Length;
+                    if (currentProgress >= progress + 10)
+                    {
+                        progress = currentProgress;
+                        Console.WriteLine($"{progress}% processed");
+                    }
 
+                    var matched = false;
+                    for (var i = 0; i < distinctHospitals.Count; ++i)
+                    {
+                        var hh = distinctHospitals[i];
+                        var hhsigs = distinctHospitalNameSigs[i];
+                        if (!LabelEngine.SubnamesMatch(h, hh)) continue;
+                        foreach (var nameA in h.Names)
+                        {
+                            for (var j = 0; j < hh.Names.Count; ++j)
+                            {
+                                matched = NameMatcher.Matches(nameA, hh.Names[j], hhsigs[j]);
+                                if (matched) break;
+                            }
+                            if (matched) break;
+                        }
+                        if (matched) break;
+                    }
+                    if (matched) continue;
+
+                    distinctHospitals.Add(h);
+                    distinctHospitalNameSigs.Add(
+                        h.Names
+                        .Select(n => NameMatcher.ComputeNameSigs(n))
+                        .ToList()
+                    );
+                    file.WriteLine(h.OriginalEntry);
+                }
+                Console.WriteLine("100% processed");
+                Console.WriteLine();
+                Console.WriteLine($"{hospitals.Length} => {distinctHospitals.Count} ({Util.ToPercentStr(distinctHospitals.Count, hospitals.Length)})");
+                Console.WriteLine();
+            }
         }
 
         static Mode ParseMode(string[] args)
